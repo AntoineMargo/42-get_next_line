@@ -17,6 +17,26 @@
 
 #define BUFFER_SIZE 42
 
+size_t	ft_strlcpy(char *dest, const char *src, size_t dest_size)
+{
+	size_t	i;
+
+	i = 0;
+	if (dest_size == 0)
+		return (0);
+	while (i < dest_size - 1 && src[i] != '\0')
+	{
+		dest[i] = src[i];
+		i++;
+	}
+	dest[i] = '\0';
+	while (src[i] != '\0')
+	{
+		i++;
+	}
+	return (i);
+}
+
 static int	calc_total_len(char const *s1, char const *s2)
 {
 	int	total_len;
@@ -69,6 +89,21 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	return (string);
 }
 
+char	*ft_strchr(const char *str, int c)
+{
+	int	i;
+
+	i = 0;
+	while (str[i])
+	{
+		if (str[i] == c)
+			return ((char *)&str[i]);
+		i++;
+	}
+	return (0);
+}
+
+
 char	*ft_strdup(char *src)
 {
 	int		len;
@@ -86,88 +121,91 @@ char	*ft_strdup(char *src)
 	return (dup);
 }
 
-char	*ft_strchr(const char *str, int c)
+char	*ft_strdup_ltd(char *src, int limit)
 {
-	int	i;
+	char	*dup;
 
-	i = 0;
-	while (str[i])
-	{
-		if (str[i] == c)
-			return ((char *)&str[i]);
-		i++;
-	}
-	return (0);
+	if (src == 0)
+		return (0);
+	dup = malloc(limit + 1);
+	if (dup == 0)
+		return (0);
+	ft_strlcpy(dup, src, limit + 1);
+	return (dup);
 }
 
-// static int find_newline(const char *str)
-// {
-// 	int	i;
 
-// 	i = 0;
-// 	while (str[i])
-// 	{
-// 		if (str[i] == '\n')
-// 			return (i);
-// 		i++;
-// 	}
-// 	return (-1);
-// }
-
-void	add_buffer_to_text(char **text, char *buffer)
+void	add_buffer_to_hold(char **hold, char *buffer)
 {
 	char	*temp;
-	char	*string;
 
-	if (*text)
+	if (*hold)
 	{
-		temp = ft_strjoin(*text, buffer);
-		free(*text);
-		*text = temp;
+		temp = ft_strjoin(*hold, buffer);
+		free(*hold);
+		*hold = temp;
 	}
 	else
-		*text = ft_strdup(buffer);
+		*hold = ft_strdup(buffer);
 }
 
-void	extract_text_from_fd(int fd, char **text)
+int	extract_data_from_fd(int fd, char **hold)
 {
 	ssize_t	bytes_read;
 	char	*buffer;
-	int		new_line_i;
 
 	bytes_read = 1;
 	buffer = malloc(BUFFER_SIZE + 1);
 	if (!buffer)
-		return ;
+		return (0);
 	while (bytes_read > 0)
 	{
 		bytes_read = read(fd, buffer, BUFFER_SIZE);
+		if (bytes_read == -1)
+			return (0);
 		buffer[bytes_read] = '\0';
-		add_buffer_to_text(text, buffer);
+		add_buffer_to_hold(hold, buffer);
 		if (ft_strchr(buffer, '\n'))
 			break ;
 	}
 	free(buffer);
+	return (1);
 }
 
-char *extract_last_line_from_text()
+char *extract_last_line_from_hold(char **hold)
 {
-	static int start;
-	static int end;
-
-
+	char	*newline_pos;
+	char	*line;
+	char	*temp_hold;
+	int		line_len;
+	
+	if (newline_pos = ft_strchr(*hold, '\n'))
+	{
+		line_len = newline_pos - *hold + 1;
+		line = ft_strdup_ltd(*hold, line_len);
+		temp_hold = ft_strdup(newline_pos + 1);
+		free(*hold);
+		*hold = temp_hold;
+	}
+	else
+	{
+		line = ft_strdup(*hold);
+		free(*hold);
+	}
+	return line;
 }
 
 char *get_next_line(int fd)
 {
-	static char	*text;
-	char	*line;
+	static char	*hold;
+	char		*line;
 
 	if (BUFFER_SIZE <= 0 || fd < 0)
 		return (0);
-	extract_text_from_fd(fd, &text);
-	line = extract_last_line_from_text();
-	return (text);
+	if (extract_data_from_fd(fd, &hold) == 0)
+		return (0);
+	line = extract_last_line_from_hold(&hold);
+	return (line);
 }
 
 int main(void)
@@ -180,5 +218,7 @@ int main(void)
 		return (1);
 	}
 	line = get_next_line(fd);
+	printf("%s", line);
+	close(fd);
 	return (0);
 }
