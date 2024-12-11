@@ -9,13 +9,38 @@
 /*   Updated: 2024/11/22 13:49:35 by amargolo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <io.h>
+#include <unistd.h>
 
 #define BUFFER_SIZE 42
+
+void	ft_bzero(void *area, int n)
+{
+	char	*target;
+
+	target = (char *)area;
+	while (n > 0)
+	{
+		*target = 0;
+		target++;
+		n--;
+	}
+}
+
+void	*ft_calloc(size_t count, size_t size)
+{
+	void	*array;
+	size_t	total_size;
+
+	total_size = size * count;
+	array = malloc(total_size);
+	if (array == 0)
+		return (0);
+	ft_bzero(array, total_size);
+	return (array);
+}
 
 size_t	ft_strlcpy(char *dest, const char *src, size_t dest_size)
 {
@@ -80,7 +105,7 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	int		total_len;
 
 	total_len = calc_total_len(s1, s2);
-	string = malloc(total_len + 1);
+	string = ft_calloc(total_len + 1, sizeof(char));
 	if (string == 0)
 		return (0);
 	ft_sstrcat(string, s1);
@@ -114,7 +139,7 @@ char	*ft_strdup(char *src)
 		return (0);
 	while (src[len])
 		len++;
-	dup = malloc(len + 1);
+	dup = ft_calloc(len + 1, sizeof(char));
 	if (dup == 0)
 		return (0);
 	ft_strlcpy(dup, src, len + 1);
@@ -127,7 +152,7 @@ char	*ft_strdup_ltd(char *src, int limit)
 
 	if (src == 0)
 		return (0);
-	dup = malloc(limit + 1);
+	dup = ft_calloc(limit + 1, sizeof(char));
 	if (dup == 0)
 		return (0);
 	ft_strlcpy(dup, src, limit + 1);
@@ -135,38 +160,43 @@ char	*ft_strdup_ltd(char *src, int limit)
 }
 
 
-void	add_buffer_to_hold(char **hold, char *buffer)
+int	add_buffer_to_hold(char **hold, char *buffer)
 {
 	char	*temp;
 
 	if (*hold)
 	{
 		temp = ft_strjoin(*hold, buffer);
+		if (!temp)
+			return (0);
 		free(*hold);
 		*hold = temp;
 	}
 	else
+	{
 		*hold = ft_strdup(buffer);
+		if (!*hold)
+			return (0);
+	}
+	return (1);
 }
 
 int	extract_data_from_fd(int fd, char **hold)
 {
-	ssize_t	bytes_read;
+	int	bytes_read;
 	char	*buffer;
 
-	bytes_read = 1;
-	buffer = malloc(BUFFER_SIZE + 1);
+	buffer = ft_calloc(BUFFER_SIZE + 1, 1);
 	if (!buffer)
 		return (0);
+	bytes_read = read(fd, buffer, BUFFER_SIZE);
 	while (bytes_read > 0)
 	{
-		bytes_read = read(fd, buffer, BUFFER_SIZE);
-		if (bytes_read == -1)
-			return (0);
 		buffer[bytes_read] = '\0';
 		add_buffer_to_hold(hold, buffer);
 		if (ft_strchr(buffer, '\n'))
 			break ;
+		bytes_read = read(fd, buffer, BUFFER_SIZE);
 	}
 	free(buffer);
 	return (1);
@@ -179,7 +209,9 @@ char *extract_last_line_from_hold(char **hold)
 	char	*temp_hold;
 	int		line_len;
 	
-	if (newline_pos = ft_strchr(*hold, '\n'))
+	newline_pos = 0;
+	newline_pos = ft_strchr(*hold, '\n');
+	if (newline_pos)
 	{
 		line_len = newline_pos - *hold + 1;
 		line = ft_strdup_ltd(*hold, line_len);
@@ -191,6 +223,7 @@ char *extract_last_line_from_hold(char **hold)
 	{
 		line = ft_strdup(*hold);
 		free(*hold);
+		*hold = 0;
 	}
 	return line;
 }
@@ -200,23 +233,88 @@ char *get_next_line(int fd)
 	static char	*hold;
 	char		*line;
 
+	line = 0;
 	if (BUFFER_SIZE <= 0 || fd < 0)
 		return (0);
-	if (extract_data_from_fd(fd, &hold) == 0)
-		return (0);
-	line = extract_last_line_from_hold(&hold);
+	extract_data_from_fd(fd, &hold);
+	if (hold)
+		line = extract_last_line_from_hold(&hold);
+
+	// printf("hold: %s", hold);
+	// printf("\n");
+	// printf("line: %s", line);
+	// printf("\n");
+
 	return (line);
 }
 
 int main(void)
 {
-	int	fd;
+	int		fd;
 	char	*line;
 
 	fd = open("example.txt", O_RDONLY);
 	if (fd < 0) {
 		return (1);
 	}
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
+	line = get_next_line(fd);
+	printf("%s", line);
 	line = get_next_line(fd);
 	printf("%s", line);
 	close(fd);
